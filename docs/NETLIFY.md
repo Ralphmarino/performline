@@ -104,10 +104,21 @@ Change the cron expression and redeploy to move it. Netlify shows each run under
 
 Search Console data is "final" about 2-3 days after the fact, so the last couple of days of a month-to-date view fill in over the following runs. Full-month, quarter and year comparisons are unaffected.
 
-### 2.5 Custom domain and access
+### 2.5 Password-protect the report
 
-- **Domain management → Add a domain** to serve it from something like `insights.performline.com`.
-- The dashboard has no login of its own. For a client-facing report, turn on **Site configuration → Access & security → Site protection** (password or Netlify Identity / SSO on paid plans) so only the team can open it.
+The repo includes its own password gate, so this works on the free Netlify plan (Netlify's built-in Site Protection needs a paid plan).
+
+1. **Site configuration → Environment variables → Add a variable**: `SITE_PASSWORD` = the password you want the team to use. Optionally add `SESSION_SECRET` (any random string); changing it later signs everyone out at once.
+2. Redeploy (**Deploys → Trigger deploy**). Edge functions pick up variables on deploy.
+3. Open the site: a branded sign-in page appears. The password sets a secure, HTTP-only cookie for 30 days. Everything is behind it, including `/api/*`, so the data cannot be fetched without signing in. `/logout` signs out.
+
+How it works: `netlify/edge-functions/auth.js` runs at Netlify's edge in front of every request and shares its logic with the Express middleware (`server/src/auth.js`), so the self-hosted version behaves the same with the same variable. Leave `SITE_PASSWORD` empty to make the site open.
+
+To rotate the password, change `SITE_PASSWORD` and redeploy; old cookies stop working immediately because the cookie is derived from the password.
+
+### 2.6 Custom domain
+
+**Domain management → Add a domain** to serve it from something like `insights.performline.com`. Netlify provisions HTTPS automatically.
 
 ## Running the same thing locally
 
@@ -129,3 +140,5 @@ With the Netlify CLI (`npm i -g netlify-cli`), `netlify dev` runs the real funct
 | `User does not have sufficient permission for site` | `GSC_SITE_URL` does not match the Search Console property type exactly, or the account was not added in Search Console (step 1.4). |
 | First load of a custom date range times out | Cold fetch of a long range; reload once and it is stored. Add the preset to `WARM_VIEWS` if you need it daily. |
 | Export PDF opens a print dialog | Expected on Netlify. Choose **Save as PDF**; the layout is the same as the server-rendered export. |
+| Sign-in page does not appear after setting `SITE_PASSWORD` | Trigger a new deploy; edge functions read environment variables at deploy time. |
+| Stuck on the sign-in page with the right password | Cookies blocked for the site, or the site is opened over plain `http://` on a custom domain (the cookie is `Secure`). Use the HTTPS URL. |

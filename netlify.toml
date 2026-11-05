@@ -6,6 +6,11 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Password gate (set SITE_PASSWORD in the environment to turn it on)
+[[edge_functions]]
+  path = "/*"
+  function = "auth"
+
 [functions]
   node_bundler = "esbuild"
   # Google client libraries ship proto / JSON assets that esbuild cannot inline; copy them whole.

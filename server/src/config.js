@@ -36,6 +36,9 @@ export const config = {
   mode,
   modeReason,
   platform: isNetlify ? 'netlify' : 'node',
+  // Password protection for the whole report (blank = open). Netlify enforces it in netlify/edge-functions/auth.js.
+  sitePassword: env('SITE_PASSWORD', ''),
+  sessionSecret: env('SESSION_SECRET', ''),
   // Chromium cannot run inside a Netlify Function; the UI then uses the browser's print-to-PDF with the same layout.
   pdfExport: env('PDF_EXPORT', isNetlify ? 'browser' : 'server'),
   // Stored reports older than this are refreshed from GA4 / GSC on the next request.

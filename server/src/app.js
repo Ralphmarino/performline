@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { buildReport, describeConfig, clearCache, warmReports } from './report.js';
+import { passwordGate } from './auth.js';
 
 const __dirname = import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd(); // import.meta.url is undefined in Netlify's CommonJS bundle
 
@@ -15,6 +16,8 @@ const __dirname = import.meta.url ? path.dirname(fileURLToPath(import.meta.url))
 export function createApp({ serveStatic = true, store = null } = {}) {
   const app = express();
   app.use(compression());
+  // Password gate (SITE_PASSWORD). On Netlify the edge function does this before requests reach the API function.
+  if (config.sitePassword && config.platform !== 'netlify') app.use(passwordGate({ password: config.sitePassword, secret: config.sessionSecret, brand: config.brand.name }));
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, mode: config.mode, platform: config.platform, time: new Date().toISOString() }));

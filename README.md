@@ -28,6 +28,7 @@ Across every tab:
 - **Light / dark mode** — toggle in the header; the choice is remembered. Chart palette validated for colour-vision deficiency in both modes.
 - **Export** — server-rendered **PDF** of the full report (all tabs, your notes included), browser print-to-PDF fallback, CSV export on every table, and shareable links that keep period, channels and tab.
 - **Notes & context** — analyst notes per tab, stored in the browser and printed into exports.
+- **Password protection** — set `SITE_PASSWORD` and the whole report (pages and API) sits behind a branded sign-in page, enforced at Netlify's edge or by the Express server.
 - Demo mode: without credentials the app serves deterministic sample data shaped like PerformLine's traffic so the whole thing works instantly.
 
 ## Quick start
@@ -52,7 +53,8 @@ The repo ships with `netlify.toml`, an `api` function (the Express API via serve
 
 1. Import the repo in Netlify (build settings are read from `netlify.toml`).
 2. Add `DATA_MODE=live`, `GA4_PROPERTY_ID`, `GSC_SITE_URL`, `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64`.
-3. Deploy, then trigger the `refresh` function once.
+3. Add `SITE_PASSWORD` to password-protect the report (works on the free plan; see the walkthrough).
+4. Deploy, then trigger the `refresh` function once.
 
 ### Self-hosted (Node or Docker)
 
@@ -89,6 +91,7 @@ client/          Vite + React + TypeScript dashboard
   src/PrintView.tsx       All tabs stacked for PDF/print
 netlify/functions/api.mjs       Express API as a Netlify Function
 netlify/functions/refresh.mjs   Daily scheduled refresh into Netlify Blobs
+netlify/edge-functions/auth.js  Password gate at the edge (shares server/src/auth-core.js)
 docs/NETLIFY.md  Netlify launch + GA4 / Search Console walkthrough
 docs/SETUP.md    Google Cloud, GA4 and Search Console setup (self-hosted)
 ```

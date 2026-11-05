@@ -83,4 +83,4 @@ Search Console data is final only after ~2-3 days; the most recent days of a mon
 
 ## 9. Deploying
 
-Any Node 20+ host works. Build the client (`npm run build`) and run `npm start`; the server serves `client/dist` and the API on `$PORT`. Put it behind your SSO / basic auth of choice — the app has no authentication of its own.
+Any Node 20+ host works. Build the client (`npm run build`) and run `npm start`; the server serves `client/dist` and the API on `$PORT`. Set `SITE_PASSWORD` in `.env` to require a password (the same gate the Netlify deployment uses), or put it behind your SSO.
