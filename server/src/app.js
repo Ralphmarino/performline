@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { buildReport, describeConfig, clearCache, warmReports } from './report.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd(); // import.meta.url is undefined in Netlify's CommonJS bundle
 
 /**
  * Build the Express app. Used by the standalone server (src/index.js) and by the Netlify Function
