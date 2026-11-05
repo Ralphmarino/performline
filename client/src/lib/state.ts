@@ -19,10 +19,12 @@ export interface AppState {
   end?: string;
   tab: TabId;
   disabledChannels: string[];
+  /** From a share link's `on=` list; resolved into disabledChannels once the channel list is known. */
+  onlyChannels: string[] | null;
   print: boolean;
 }
 
-export const defaultState: AppState = { view: 'mom', preset: 'last_month', compare: 'previous_period', tab: 'overview', disabledChannels: [], print: false };
+export const defaultState: AppState = { view: 'mom', preset: 'last_month', compare: 'previous_period', tab: 'overview', disabledChannels: [], onlyChannels: null, print: false };
 
 export function readState(search = window.location.search): AppState {
   const q = new URLSearchParams(search);
@@ -35,11 +37,12 @@ export function readState(search = window.location.search): AppState {
     end: q.get('end') || undefined,
     tab: TABS.some((t) => t.id === tab) ? tab : 'overview',
     disabledChannels: (q.get('off') || '').split('|').filter(Boolean),
+    onlyChannels: q.get('on') ? q.get('on')!.split('|').filter(Boolean) : null,
     print: q.get('print') === '1',
   };
 }
 
-export function stateToSearch(s: AppState): string {
+export function stateToSearch(s: AppState, channels: string[] = []): string {
   const q = new URLSearchParams();
   if (s.view) q.set('view', s.view);
   else {
@@ -51,7 +54,13 @@ export function stateToSearch(s: AppState): string {
     }
   }
   if (s.tab !== 'overview') q.set('tab', s.tab);
-  if (s.disabledChannels.length) q.set('off', s.disabledChannels.join('|'));
+  if (s.onlyChannels) q.set('on', s.onlyChannels.join('|'));
+  else if (s.disabledChannels.length) {
+    // Encode whichever list is shorter: `on=Organic Search` beats listing 13 channels as off.
+    const on = channels.filter((ch) => !s.disabledChannels.includes(ch));
+    if (channels.length && on.length < s.disabledChannels.length) q.set('on', on.join('|'));
+    else q.set('off', s.disabledChannels.join('|'));
+  }
   const str = q.toString();
   return str ? `?${str}` : '';
 }

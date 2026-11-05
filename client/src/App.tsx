@@ -27,11 +27,19 @@ export default function App() {
   }, []);
 
   // Sync URL with state so views are shareable and the PDF renderer can reproduce them.
+  // A share link with `on=` becomes a disabled list once we know the property's channels.
+  useEffect(() => {
+    if (report && state.onlyChannels) {
+      const on = state.onlyChannels;
+      setState((s) => ({ ...s, onlyChannels: null, disabledChannels: report.meta.channels.filter((ch) => !on.includes(ch)) }));
+    }
+  }, [report, state.onlyChannels]);
+
   useEffect(() => {
     if (state.print) return;
-    const next = stateToSearch(state);
+    const next = stateToSearch(state, report?.meta.channels || []);
     if (next !== window.location.search) window.history.replaceState(null, '', `${window.location.pathname}${next}`);
-  }, [state]);
+  }, [state, report]);
 
   const query = reportQuery(state);
   useEffect(() => {
@@ -59,7 +67,12 @@ export default function App() {
     });
   }, [config]);
 
-  const computed = useMemo(() => (report ? compute(report, state.disabledChannels) : null), [report, state.disabledChannels]);
+  const computed = useMemo(() => (report ? compute(report, state.onlyChannels ? report.meta.channels.filter((ch) => !state.onlyChannels!.includes(ch)) : state.disabledChannels) : null), [report, state.disabledChannels, state.onlyChannels]);
+  const channelStats = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const r of report?.ga4.daily || []) if (r.period === 'current') out[r.channel] = (out[r.channel] || 0) + r.sessions;
+    return out;
+  }, [report]);
   const summary = useMemo(() => (report && computed ? buildSummary(computed, report.meta) : null), [report, computed]);
 
   const onExportPdf = async () => {
@@ -70,7 +83,7 @@ export default function App() {
     setExporting(true);
     try {
       const label = report ? `${report.meta.periods.current.label} vs ${report.meta.periods.compareRange.label}` : 'report';
-      await downloadPdf(stateToSearch(state), loadNotes(), getTheme(), `PerformLine Insights - ${label}.pdf`.replace(/[^\w .-]/g, ''));
+      await downloadPdf(stateToSearch(state, report?.meta.channels || []), loadNotes(), getTheme(), `PerformLine Insights - ${label}.pdf`.replace(/[^\w .-]/g, ''));
     } catch (e: any) {
       if (e.status === 501) {
         alert('Server-side PDF rendering is not available on this deployment - opening the browser print dialog instead. Choose "Save as PDF".');
@@ -81,7 +94,8 @@ export default function App() {
     }
   };
   const onPrint = () => {
-    const url = `${window.location.pathname}${stateToSearch(state)}${stateToSearch(state) ? '&' : '?'}print=1&theme=${getTheme()}`;
+    const search = stateToSearch(state, report?.meta.channels || []);
+    const url = `${window.location.pathname}${search}${search ? '&' : '?'}print=1&theme=${getTheme()}`;
     const w = window.open(url, '_blank');
     if (!w) alert('Pop-up blocked - allow pop-ups for this site to print.');
   };
@@ -120,7 +134,7 @@ export default function App() {
       <main className="main">
         <div className="container stack">
           <div className="row spread">
-            <ChannelFilter channels={report.meta.channels} disabled={state.disabledChannels} onChange={(d) => patch({ disabledChannels: d })} />
+            <ChannelFilter channels={report.meta.channels} disabled={state.disabledChannels} onChange={(d) => patch({ disabledChannels: d, onlyChannels: null })} stats={channelStats} />
             <span className="small muted no-print">
               {loading ? 'Refreshing…' : report.meta.mode === 'demo' ? 'Demo data' : `GA4 + Search Console · refreshed daily · last update ${new Date(report.meta.generatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`}
             </span>

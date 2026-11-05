@@ -1,6 +1,6 @@
 import { Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fmtCompact, fmtDate } from '../lib/format';
-import { useThemeColors, channelColor } from '../lib/theme';
+import { useThemeColors, channelColor, colorOrder } from '../lib/theme';
 import type { Bucket } from '../lib/compute';
 
 export interface SeriesPoint { idx: number; label: string; currentDate: string; compareDate: string; current: number | null; compare: number | null }
@@ -72,8 +72,9 @@ function StackTooltip({ active, payload, label, channels, colors }: { active?: b
 /** Stacked sessions by channel for the current period. */
 export function ChannelStack({ buckets, channels, enabled, height = 280 }: { buckets: Bucket[]; channels: string[]; enabled: Set<string>; height?: number }) {
   const c = useThemeColors();
-  const shown = channels.filter((ch) => enabled.has(ch)).slice(0, 8);
-  const other = channels.filter((ch) => enabled.has(ch)).slice(8);
+  const ordered = colorOrder(channels).filter((ch) => enabled.has(ch));
+  const shown = ordered.filter((ch) => colorOrder(channels).indexOf(ch) < 8);
+  const other = ordered.filter((ch) => colorOrder(channels).indexOf(ch) >= 8);
   const data = buckets.filter((b) => b.currentDays > 0 && (b.fullDays === 1 || b.currentDays >= b.fullDays)).map((b) => ({ label: b.label, ...Object.fromEntries(shown.map((ch) => [ch, b.channels[ch] || 0])), ...(other.length ? { Other: other.reduce((s, ch) => s + (b.channels[ch] || 0), 0) } : {}) }));
   const keys = other.length ? [...shown, 'Other'] : shown;
   const tick = { fill: c.muted, fontSize: 11 };

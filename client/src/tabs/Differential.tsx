@@ -1,6 +1,7 @@
 import { Callout, Card } from '../components/Section';
 import { Delta } from '../components/DeltaCell';
 import { Notes } from '../components/Notes';
+import { ExpandableList } from '../components/ExpandableList';
 import { downloadCsv } from '../lib/api';
 import { avgEngagement, conversionRate, engagementRate } from '../lib/compute';
 import { delta, fmtDuration, fmtInt, fmtNum, fmtPct } from '../lib/format';
@@ -49,9 +50,9 @@ export function Differential({ report, c, print, onState }: TabProps) {
   const exportCsv = () => downloadCsv('differential.csv', ['Group', 'Metric', cur, cmp, 'Change', 'Change %'], rows.map((r) => [r.group, r.metric, r.current, r.compare, r.current - r.compare, delta(r.current, r.compare) === null ? 'new' : ((delta(r.current, r.compare) as number) * 100).toFixed(1)]));
 
   const quick = report.meta.periods;
-  const winners = (list: { name: string; current: number; compare: number }[], n = 6) => {
+  const winners = (list: { name: string; current: number; compare: number }[]) => {
     const scored = list.filter((x) => x.current + x.compare > 30).map((x) => ({ ...x, change: x.current - x.compare, pct: delta(x.current, x.compare) }));
-    return { up: [...scored].sort((a, b2) => b2.change - a.change).filter((x) => x.change > 0).slice(0, n), down: [...scored].sort((a, b2) => a.change - b2.change).filter((x) => x.change < 0).slice(0, n) };
+    return { up: [...scored].sort((a, b2) => b2.change - a.change).filter((x) => x.change > 0), down: [...scored].sort((a, b2) => a.change - b2.change).filter((x) => x.change < 0) };
   };
   const lp = winners(c.landingPages.map((l) => ({ name: l.landingPage, current: l.current.sessions, compare: l.compare.sessions })));
   const q = winners(c.gsc.queries.map((x) => ({ name: x.query, current: x.current.clicks, compare: x.compare.clicks })));
@@ -117,32 +118,31 @@ export function Differential({ report, c, print, onState }: TabProps) {
         </div>
       </Card>
       <div className="grid grid-2">
-        <MoverCard title="Landing pages" up={lp.up} down={lp.down} unit="sessions" />
-        <MoverCard title="Search queries" up={q.up} down={q.down} unit="clicks" />
-        <MoverCard title="Blog posts" up={bp.up} down={bp.down} unit="sessions" />
-        <MoverCard title="Sources / mediums" up={src.up} down={src.down} unit="sessions" />
+        <MoverCard title="Landing pages" up={lp.up} down={lp.down} unit="sessions" print={print} />
+        <MoverCard title="Search queries" up={q.up} down={q.down} unit="clicks" print={print} />
+        <MoverCard title="Blog posts" up={bp.up} down={bp.down} unit="sessions" print={print} />
+        <MoverCard title="Sources / mediums" up={src.up} down={src.down} unit="sessions" print={print} />
       </div>
       <Notes id="differential" print={print} />
     </div>
   );
 }
 
-function MoverCard({ title, up, down, unit }: { title: string; up: { name: string; change: number; pct: number | null }[]; down: { name: string; change: number; pct: number | null }[]; unit: string }) {
+type Mover = { name: string; change: number; pct: number | null };
+function MoverCard({ title, up, down, unit, print }: { title: string; up: Mover[]; down: Mover[]; unit: string; print?: boolean }) {
   return (
-    <Card title={`${title}: winners & losers`} subtitle={`largest absolute change in ${unit}`}>
+    <Card title={`${title}: winners & losers`} subtitle={`largest absolute change in ${unit} · ${up.length} up, ${down.length} down`}>
       <div className="winners">
-        <ul className="mini-list">
-          {up.length === 0 && <li className="muted">No gainers</li>}
-          {up.map((x) => (
+        <div>
+          <ExpandableList items={up} print={print} empty="No gainers" render={(x) => (
             <li key={x.name}><span className="name" title={x.name}>{x.name}</span><span className="good nowrap">+{fmtInt(x.change)} <span className="muted small">({x.pct === null ? 'new' : fmtPct(x.pct, 0)})</span></span></li>
-          ))}
-        </ul>
-        <ul className="mini-list">
-          {down.length === 0 && <li className="muted">No decliners</li>}
-          {down.map((x) => (
+          )} />
+        </div>
+        <div>
+          <ExpandableList items={down} print={print} empty="No decliners" render={(x) => (
             <li key={x.name}><span className="name" title={x.name}>{x.name}</span><span className="bad nowrap">{fmtInt(x.change)} <span className="muted small">({fmtPct(x.pct ?? 0, 0)})</span></span></li>
-          ))}
-        </ul>
+          )} />
+        </div>
       </div>
     </Card>
   );

@@ -3,6 +3,7 @@ import { KpiCard } from '../components/KpiCard';
 import { TrendChart } from '../components/Charts';
 import { DataTable } from '../components/DataTable';
 import { Notes } from '../components/Notes';
+import { ExpandableList } from '../components/ExpandableList';
 import { seriesOf, engagementRate, avgEngagement } from '../lib/compute';
 import { fmtInt, fmtPct, fmtDuration, fmtNum } from '../lib/format';
 import { labels, metricColumns, type TabProps } from './common';
@@ -43,18 +44,14 @@ export function Behavior({ report, c, print }: TabProps) {
       </Card>
       <div className="grid grid-2">
         <Card title="Most engaging landing pages" subtitle="20+ sessions, ranked by engagement rate">
-          <ul className="mini-list">
-            {engaged.slice(0, 8).map((l, i) => (
-              <li key={l.landingPage}><span className="name"><span className="rank">{i + 1}</span>{l.landingPage}</span><span className="nowrap"><b>{fmtPct(engagementRate(l.current), 0)}</b> <span className="muted small">· {fmtInt(l.current.sessions)} sessions</span></span></li>
-            ))}
-          </ul>
+          <ExpandableList items={engaged} print={print} render={(l, i) => (
+            <li key={l.landingPage}><span className="name"><span className="rank">{i + 1}</span>{l.landingPage}</span><span className="nowrap"><b>{fmtPct(engagementRate(l.current), 0)}</b> <span className="muted small">· {fmtInt(l.current.sessions)} sessions</span></span></li>
+          )} />
         </Card>
         <Card title="Least engaging landing pages" subtitle="candidates for content or intent fixes">
-          <ul className="mini-list">
-            {bouncy.slice(0, 8).map((l, i) => (
-              <li key={l.landingPage}><span className="name"><span className="rank">{i + 1}</span>{l.landingPage}</span><span className="nowrap"><b className="bad">{fmtPct(engagementRate(l.current), 0)}</b> <span className="muted small">· {fmtInt(l.current.sessions)} sessions</span></span></li>
-            ))}
-          </ul>
+          <ExpandableList items={bouncy} print={print} render={(l, i) => (
+            <li key={l.landingPage}><span className="name"><span className="rank">{i + 1}</span>{l.landingPage}</span><span className="nowrap"><b className="bad">{fmtPct(engagementRate(l.current), 0)}</b> <span className="muted small">· {fmtInt(l.current.sessions)} sessions</span></span></li>
+          )} />
         </Card>
       </div>
       <Notes id="behavior" print={print} />

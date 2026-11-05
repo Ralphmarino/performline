@@ -63,9 +63,18 @@ export function useThemeColors(): ThemeColors & { theme: Theme } {
   return colors;
 }
 
-/** Stable channel -> color assignment: fixed order by the report's channel list, never cycled. */
+const AI_CHANNEL = 'AI Assistant';
+/** Colour order: the report's channel order (by sessions) with AI Assistant guaranteed a slot in the first eight. */
+export function colorOrder(channels: string[]): string[] {
+  const ai = channels.indexOf(AI_CHANNEL);
+  if (ai < 0 || ai < 8) return channels;
+  const out = channels.filter((ch) => ch !== AI_CHANNEL);
+  out.splice(7, 0, AI_CHANNEL);
+  return out;
+}
+/** Stable channel -> color assignment: fixed order, never cycled; channels past slot 8 are muted ("Other"). */
 export function channelColor(channel: string, channels: string[], colors: ThemeColors): string {
-  const i = channels.indexOf(channel);
+  const i = colorOrder(channels).indexOf(channel);
   if (i < 0 || i >= colors.series.length) return colors.muted;
   return colors.series[i];
 }

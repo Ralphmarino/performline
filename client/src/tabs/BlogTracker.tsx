@@ -4,6 +4,7 @@ import { CompareBars } from '../components/Charts';
 import { DataTable } from '../components/DataTable';
 import { Delta } from '../components/DeltaCell';
 import { Notes } from '../components/Notes';
+import { ExpandableList } from '../components/ExpandableList';
 import { avgEngagement, engagementRate } from '../lib/compute';
 import { fmtInt, fmtPct, fmtDuration } from '../lib/format';
 import { labels, type TabProps } from './common';
@@ -14,8 +15,8 @@ export function BlogTracker({ report, c, print }: TabProps) {
   const posts = b.posts;
   const maxSessions = Math.max(1, ...posts.map((p) => p.current.sessions));
   const movers = posts.filter((p) => !p.isNew && p.current.sessions + p.compare.sessions > 30).map((p) => ({ p, change: p.current.sessions - p.compare.sessions }));
-  const risers = [...movers].sort((a, b2) => b2.change - a.change).slice(0, 6);
-  const fallers = [...movers].sort((a, b2) => a.change - b2.change).filter((m) => m.change < 0).slice(0, 6);
+  const risers = [...movers].sort((a, b2) => b2.change - a.change).filter((m) => m.change > 0);
+  const fallers = [...movers].sort((a, b2) => a.change - b2.change).filter((m) => m.change < 0);
   return (
     <div className="stack">
       <div className="grid grid-4">
@@ -35,20 +36,15 @@ export function BlogTracker({ report, c, print }: TabProps) {
           <div className="winners">
             <div>
               <div className="small muted" style={{ fontWeight: 700, marginBottom: 6 }}>📈 Rising</div>
-              <ul className="mini-list">
-                {risers.map(({ p, change }) => (
-                  <li key={p.pagePath}><span className="name" title={p.title}>{p.title}</span><span className="good nowrap">+{fmtInt(change)}</span></li>
-                ))}
-              </ul>
+              <ExpandableList items={risers} initial={6} print={print} empty="Nothing rising" render={({ p, change }) => (
+                <li key={p.pagePath}><span className="name" title={p.title}>{p.title}</span><span className="good nowrap">+{fmtInt(change)}</span></li>
+              )} />
             </div>
             <div>
               <div className="small muted" style={{ fontWeight: 700, marginBottom: 6 }}>📉 Falling</div>
-              <ul className="mini-list">
-                {fallers.length === 0 && <li className="muted">Nothing falling - nice.</li>}
-                {fallers.map(({ p, change }) => (
-                  <li key={p.pagePath}><span className="name" title={p.title}>{p.title}</span><span className="bad nowrap">{fmtInt(change)}</span></li>
-                ))}
-              </ul>
+              <ExpandableList items={fallers} initial={6} print={print} empty="Nothing falling - nice." render={({ p, change }) => (
+                <li key={p.pagePath}><span className="name" title={p.title}>{p.title}</span><span className="bad nowrap">{fmtInt(change)}</span></li>
+              )} />
             </div>
           </div>
         </Card>

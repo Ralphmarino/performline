@@ -24,7 +24,7 @@ An interactive acquisition, behavior, AI-visibility and blog reporting system fo
 Across every tab:
 
 - **Period presets** — Month over Month, Quarter over Quarter, Year over Year, 6 Months vs 6 Months, plus month-to-date, quarter-to-date, year-to-date, last 3/6/12 months and custom ranges, each compared against the previous period or the same period last year.
-- **Channel toggles** — click a chip to switch a channel off (double-click to isolate one). Every KPI, chart and table recomputes client-side.
+- **Channel filter** — one-click presets (All, Organic, Paid, Social, Search, Direct & Email, AI) plus a picker with checkboxes, per-channel **only**, All / None / Invert and session counts. Every KPI, chart and table recomputes client-side, and the selection is in the share link.
 - **Light / dark mode** — toggle in the header; the choice is remembered. Chart palette validated for colour-vision deficiency in both modes.
 - **Export** — server-rendered **PDF** of the full report (all tabs, your notes included), browser print-to-PDF fallback, CSV export on every table, and shareable links that keep period, channels and tab.
 - **Notes & context** — analyst notes per tab, stored in the browser and printed into exports.
