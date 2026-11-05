@@ -1,0 +1,32 @@
+[build]
+  command = "npm run build"
+  publish = "client/dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+  # Google client libraries ship proto / JSON assets that esbuild cannot inline; copy them whole.
+  external_node_modules = ["@google-analytics/data", "googleapis", "google-gax", "google-auth-library", "playwright"]
+
+[functions.api]
+  # GA4 + Search Console cold fetch for a never-seen range can take a few seconds.
+  timeout = 26
+
+[functions.refresh]
+  timeout = 120
+
+# API -> function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+  force = true
+
+# Single-page app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

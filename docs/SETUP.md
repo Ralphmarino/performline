@@ -1,5 +1,7 @@
 # Connecting Google Analytics 4 and Search Console
 
+> Deploying on Netlify? Follow **[NETLIFY.md](NETLIFY.md)** instead - it covers these Google steps plus the Netlify site and the daily refresh.
+
 The server reads both APIs with a single Google Cloud **service account**. Nothing is written back; read-only scopes only.
 
 ## 1. Create the service account
@@ -43,6 +45,8 @@ On hosts where you cannot upload a file (Render, Railway, Vercel, Fly), paste th
 GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...","client_email":"..."}
 ```
 
+or, for single-line environment UIs such as Netlify, base64-encode the file (`base64 -w0 service-account.json`) into `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64`.
+
 Restart the server. `GET /api/health` reports `"mode":"live"` and the header pill reads **Live GA4 + GSC**. If anything is missing the server logs why and falls back to demo data rather than failing.
 
 ## 4. Key events (conversions)
@@ -63,9 +67,9 @@ Any other key event present in the data is appended automatically. Leave the var
 
 AI referrals are classified server-side (`server/src/ai.js`) by source host — `chatgpt.com`, `perplexity.ai`, `gemini.google.com`, `claude.ai`, `copilot.microsoft.com`, `grok.com`, `meta.ai`, `chat.deepseek.com`, `chat.mistral.ai`, `you.com` and more — and by GA4's own **AI Assistant** channel group / `ai-assistant` medium. They are reported as a separate **AI Assistant** channel everywhere. Add new assistants to the `AI_ENGINES` list as they appear in your referral report.
 
-## 7. Quotas and caching
+## 7. Daily refresh, quotas and caching
 
-A full report issues ~7 GA4 Data API requests and ~12 Search Console requests. Responses are cached in memory for `CACHE_TTL_MINUTES` (default 15), so repeated loads and PDF exports do not touch the APIs again. GA4's default quota (25k tokens/day per property) comfortably covers daily use by a team.
+A full report issues ~7 GA4 Data API requests and ~12 Search Console requests. Reports are stored (Netlify Blobs on Netlify, `server/.cache` elsewhere) and served from the store until they are `REPORT_MAX_AGE_HOURS` old (default 24). `npm run refresh` (or the Netlify scheduled function) rebuilds the standard views once a day; schedule it with cron on a self-hosted box. In-memory caching (`CACHE_TTL_MINUTES`) sits on top. GA4's default quota (25k tokens/day per property) comfortably covers daily use by a team.
 
 Search Console data is final only after ~2-3 days; the most recent days of a month-to-date view may still be filling in.
 

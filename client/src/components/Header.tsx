@@ -69,12 +69,14 @@ export function Header({ config, meta, state, onState, onExportPdf, onPrint, exp
                 <div className="dropdown">
                   <button onClick={() => { setOpen(false); void onExportPdf(); }}>
                     <span>📄</span>
-                    <span>Download PDF<small>Full report, all sections, rendered server-side</small></span>
+                    <span>Export PDF<small>{config.pdfExport === 'server' ? 'Full report, all sections, rendered server-side' : 'Full report, all sections - choose "Save as PDF" in the print dialog'}</small></span>
                   </button>
-                  <button onClick={() => { setOpen(false); onPrint(); }}>
-                    <span>🖨️</span>
-                    <span>Print / Save as PDF<small>Opens the browser print dialog</small></span>
-                  </button>
+                  {config.pdfExport === 'server' && (
+                    <button onClick={() => { setOpen(false); onPrint(); }}>
+                      <span>🖨️</span>
+                      <span>Print<small>Opens the browser print dialog</small></span>
+                    </button>
+                  )}
                   <button onClick={() => { setOpen(false); void navigator.clipboard?.writeText(window.location.href); }}>
                     <span>🔗</span>
                     <span>Copy share link<small>Keeps period, channels and tab</small></span>

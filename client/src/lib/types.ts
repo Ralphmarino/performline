@@ -64,6 +64,9 @@ export interface Report {
 export interface AppConfig {
   mode: 'demo' | 'live';
   modeReason: string;
+  platform: 'netlify' | 'node';
+  pdfExport: 'server' | 'browser';
+  reportMaxAgeHours: number;
   brand: { name: string; site: string };
   ga4PropertyId: string;
   gscSiteUrl: string;

@@ -34,6 +34,9 @@ export function describeConfig() {
   return {
     mode: config.mode,
     modeReason: config.modeReason,
+    platform: config.platform,
+    pdfExport: config.pdfExport,
+    reportMaxAgeHours: config.reportMaxAgeHours,
     brand: config.brand,
     ga4PropertyId: config.mode === 'live' ? config.ga4PropertyId : 'demo',
     gscSiteUrl: config.gscSiteUrl,
@@ -47,10 +50,46 @@ export function describeConfig() {
   };
 }
 
-export async function buildReport(query) {
+const reportKey = (periods) => `${config.mode}|${periods.current.start}_${periods.current.end}|${periods.compareRange.start}_${periods.compareRange.end}`;
+const ageHours = (iso) => (Date.now() - new Date(iso).getTime()) / 3_600_000;
+
+/**
+ * Build (or serve) the report for a query.
+ *  1. in-memory cache (minutes)  2. persistent store (daily refresh)  3. live GA4 + GSC fetch, then stored.
+ * Demo data is never stored - it is instant anyway.
+ */
+export async function buildReport(query, { store = null, refresh = false } = {}) {
   const periods = resolvePeriods(query);
-  const key = JSON.stringify([config.mode, periods.current, periods.compareRange]);
+  const key = reportKey(periods);
+  if (refresh) cache.store.delete(key);
   return cache.wrap(key, async () => {
+    if (store && config.mode === 'live' && !refresh) {
+      const stored = await store.get(key);
+      if (stored && ageHours(stored.meta.generatedAt) < config.reportMaxAgeHours) return stored;
+    }
+    const report = await fetchReport(periods);
+    if (store && config.mode === 'live') await store.set(key, report);
+    return report;
+  });
+}
+
+/** Pre-build the standard views so the dashboard opens instantly. Called by the daily schedule. */
+export async function warmReports({ store = null } = {}) {
+  const started = Date.now();
+  const results = [];
+  for (const view of config.warmViews) {
+    const query = QUICK_VIEWS[view] ? { view } : { preset: view };
+    try {
+      const report = await buildReport(query, { store, refresh: true });
+      results.push({ view, ok: true, label: `${report.meta.periods.current.label} vs ${report.meta.periods.compareRange.label}` });
+    } catch (err) {
+      results.push({ view, ok: false, error: err.message });
+    }
+  }
+  return { refreshedAt: new Date().toISOString(), mode: config.mode, ms: Date.now() - started, results };
+}
+
+async function fetchReport(periods) {
     const [ga4, gsc] = await Promise.all([loadGa4(periods), loadGsc(periods)]);
     const channels = [...new Set(ga4.daily.map((r) => r.channel))].sort((a, b) => {
       const sa = ga4.daily.filter((r) => r.channel === a && r.period === 'current').reduce((s, r) => s + r.sessions, 0);
@@ -72,7 +111,6 @@ export async function buildReport(query) {
       ga4,
       gsc,
     };
-  });
 }
 
 export const clearCache = () => cache.clear();

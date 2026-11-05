@@ -4,7 +4,8 @@ import { classifyAi, AI_CHANNEL } from '../ai.js';
 
 let client;
 function getClient() {
-  if (!client) client = new BetaAnalyticsDataClient(config.googleCredentials());
+  // REST transport instead of gRPC: smaller, cold-start friendly and works inside Netlify Functions.
+  if (!client) client = new BetaAnalyticsDataClient({ ...config.googleCredentials(), fallback: 'rest' });
   return client;
 }
 

@@ -46,11 +46,20 @@ Open <http://localhost:5173>. The server runs on port 8787 in **demo mode** unti
 3. Set `DATA_MODE=live`, `GA4_PROPERTY_ID`, `GSC_SITE_URL` and either `GOOGLE_APPLICATION_CREDENTIALS` or `GOOGLE_SERVICE_ACCOUNT_JSON`.
 4. Restart. The header pill switches from "Demo data" to "Live GA4 + GSC".
 
-### Production
+### Deploy on Netlify (recommended)
+
+The repo ships with `netlify.toml`, an `api` function (the Express API via serverless-http) and a scheduled `refresh` function that rebuilds the standard views from GA4 + Search Console **every day at 10:00 UTC** and stores them in Netlify Blobs, so the dashboard opens instantly with yesterday's complete data. Full walkthrough, including the Google service-account steps: **[docs/NETLIFY.md](docs/NETLIFY.md)**.
+
+1. Import the repo in Netlify (build settings are read from `netlify.toml`).
+2. Add `DATA_MODE=live`, `GA4_PROPERTY_ID`, `GSC_SITE_URL`, `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64`.
+3. Deploy, then trigger the `refresh` function once.
+
+### Self-hosted (Node or Docker)
 
 ```bash
 npm run build      # builds the client into client/dist
 npm start          # Express serves the API and the built client on $PORT
+npm run refresh    # the daily job: rebuild + store the standard views (schedule with cron)
 ```
 
 Or with Docker:
@@ -78,14 +87,18 @@ client/          Vite + React + TypeScript dashboard
   src/lib/summary.ts      Rule-based executive summary / insights
   src/tabs/               One component per report tab
   src/PrintView.tsx       All tabs stacked for PDF/print
-docs/SETUP.md    Google Cloud, GA4 and Search Console setup
+netlify/functions/api.mjs       Express API as a Netlify Function
+netlify/functions/refresh.mjs   Daily scheduled refresh into Netlify Blobs
+docs/NETLIFY.md  Netlify launch + GA4 / Search Console walkthrough
+docs/SETUP.md    Google Cloud, GA4 and Search Console setup (self-hosted)
 ```
 
 ## API
 
 - `GET /api/config` — mode, presets, quick views, key events
 - `GET /api/report?view=mom|qoq|yoy|h6` or `?preset=last_6_months&compare=previous_year` or `?preset=custom&start=YYYY-MM-DD&end=YYYY-MM-DD`
-- `POST /api/export/pdf` — `{ search, notes, theme, filename }` → PDF
+- `POST /api/export/pdf` — `{ search, notes, theme, filename }` → PDF (self-hosted only; Netlify uses browser print)
+- `POST /api/refresh` — rebuild and store the standard views (what the daily schedule runs)
 - `POST /api/cache/clear`
 
 ## Scripts
@@ -96,4 +109,5 @@ docs/SETUP.md    Google Cloud, GA4 and Search Console setup
 | `npm run build` | Typecheck and build the client |
 | `npm start` | Serve API + built client |
 | `npm test` | Server unit tests (period maths, demo data, AI classification) |
+| `npm run refresh` | Rebuild and store the standard report views (daily job) |
 | `npm run typecheck` | TypeScript check for the client |

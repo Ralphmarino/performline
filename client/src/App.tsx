@@ -63,6 +63,10 @@ export default function App() {
   const summary = useMemo(() => (report && computed ? buildSummary(computed, report.meta) : null), [report, computed]);
 
   const onExportPdf = async () => {
+    if (config?.pdfExport !== 'server') {
+      onPrint();
+      return;
+    }
     setExporting(true);
     try {
       const label = report ? `${report.meta.periods.current.label} vs ${report.meta.periods.compareRange.label}` : 'report';
@@ -117,7 +121,9 @@ export default function App() {
         <div className="container stack">
           <div className="row spread">
             <ChannelFilter channels={report.meta.channels} disabled={state.disabledChannels} onChange={(d) => patch({ disabledChannels: d })} />
-            <span className="small muted no-print">{loading ? 'Refreshing…' : `${report.meta.mode === 'demo' ? 'Demo data' : 'Live data'} · updated ${new Date(report.meta.generatedAt).toLocaleTimeString()}`}</span>
+            <span className="small muted no-print">
+              {loading ? 'Refreshing…' : report.meta.mode === 'demo' ? 'Demo data' : `GA4 + Search Console · refreshed daily · last update ${new Date(report.meta.generatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`}
+            </span>
           </div>
           {error && <div className="error">⚠️ {error}</div>}
           <div key={state.tab} style={{ opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
