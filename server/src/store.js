@@ -63,6 +63,8 @@ export function createStore({ blobs = null } = {}) {
     }
   }
   if (process.env.NETLIFY === 'true') return NullStore;
-  const dir = process.env.REPORT_CACHE_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.cache');
+  // import.meta.url is undefined inside Netlify's CommonJS function bundle; fall back to the working directory.
+  const here = import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd();
+  const dir = process.env.REPORT_CACHE_DIR || path.resolve(here, import.meta.url ? '../.cache' : '.cache');
   return new FileStore(dir);
 }
